@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private FloatingActionButton btnAdd;
     private Document lockedDocument = null;
 
-    // EXPORT PROTOCOL: Opens native picker to "Save As"
+    // EXPORT PROTOCOL: Opens native picker to 'Save As'
     private final ActivityResultLauncher<String> exportLauncher = registerForActivityResult(
             new ActivityResultContracts.CreateDocument("application/pdf"),
             uri -> {
