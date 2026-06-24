@@ -23,6 +23,7 @@ public class DocumentAdapter extends RecyclerView.Adapter<DocumentAdapter.DocVie
     public interface TargetCommandListener {
         void onTargetLocked(Document document);
         void onTargetCleared();
+        void onTargetOpened(Document document);
     }
 
     public DocumentAdapter(TargetCommandListener listener) {
@@ -77,6 +78,9 @@ public class DocumentAdapter extends RecyclerView.Adapter<DocumentAdapter.DocVie
         holder.itemView.setOnClickListener(v -> {
             if (lockedPosition != -1) {
                 clearLock();
+            }
+            else{
+                commandListener.onTargetOpened(doc);
             }
         });
     }

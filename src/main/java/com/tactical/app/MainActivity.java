@@ -14,6 +14,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.room.Room;
+import androidx.core.content.FileProvider;
+import android.webkit.MimeTypeMap;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -61,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
         ImageButton btnExport = findViewById(R.id.btnExport);
         ImageButton btnDelete = findViewById(R.id.btnDelete);
         RecyclerView rvDocuments = findViewById(R.id.rvDocuments);
+        ImageButton btnShare = findViewById(R.id.btnShare);
 
         // Setup RecyclerView
         rvDocuments.setLayoutManager(new LinearLayoutManager(this));
@@ -78,12 +81,19 @@ public class MainActivity extends AppCompatActivity {
                 tacticalActionBar.setVisibility(View.GONE);
                 btnAdd.setVisibility(View.VISIBLE);
             }
+
+            @Override
+            public void onTargetOpened(Document document) {
+                executeViewProtocol(document); // <-- Routes to the new view function
+            }
         });
         rvDocuments.setAdapter(adapter);
 
         // Actions
         btnAdd.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, UploadActivity.class)));
-        
+
+        btnShare.setOnClickListener(v -> triggerShareProtocol());
+
         btnExport.setOnClickListener(v -> {
             if (lockedDocument != null) {
                 // Launch file picker with suggested name
@@ -112,14 +122,14 @@ public class MainActivity extends AppCompatActivity {
     private void executeExport(Uri targetUri) {
         ioExecutor.execute(() -> {
             try (InputStream in = new FileInputStream(new File(lockedDocument.diskLocation));
-                 OutputStream out = getContentResolver().openOutputStream(targetUri)) {
-                
+                    OutputStream out = getContentResolver().openOutputStream(targetUri)) {
+
                 byte[] buffer = new byte[4096];
                 int len;
                 while ((len = in.read(buffer)) > 0) {
                     out.write(buffer, 0, len);
                 }
-                
+
                 runOnUiThread(() -> {
                     Toast.makeText(MainActivity.this, "Extraction Successful", Toast.LENGTH_SHORT).show();
                     adapter.clearLock();
@@ -130,8 +140,54 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private Uri getSecureUri(File file) {
+        return FileProvider.getUriForFile(this, getPackageName() + ".provider", file);
+    }
+
+    private String getMimeType(String url) {
+        String type = "*/*";
+        String extension = MimeTypeMap.getFileExtensionFromUrl(url);
+        if (extension != null) {
+            type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+        }
+        return type;
+    }
+
+    private void executeViewProtocol(Document document) {
+        File file = new File(document.diskLocation);
+        Uri secureUri = getSecureUri(file);
+        String mimeType = getMimeType(file.getAbsolutePath());
+
+        Intent viewIntent = new Intent(Intent.ACTION_VIEW);
+        viewIntent.setDataAndType(secureUri, mimeType);
+        viewIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); // Critical security flag
+
+        try {
+            startActivity(viewIntent);
+        } catch (Exception e) {
+            Toast.makeText(this, "ERROR: No civilian app installed to view this format.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void triggerShareProtocol() {
+        if (lockedDocument == null)
+            return;
+
+        File file = new File(lockedDocument.diskLocation);
+        Uri secureUri = getSecureUri(file);
+        String mimeType = getMimeType(file.getAbsolutePath());
+
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType(mimeType);
+        shareIntent.putExtra(Intent.EXTRA_STREAM, secureUri);
+        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); // Critical security flag
+
+        startActivity(Intent.createChooser(shareIntent, "Transmit Intel Via:"));
+    }
+
     private void triggerDeleteProtocol() {
-        if (lockedDocument == null) return;
+        if (lockedDocument == null)
+            return;
 
         new MaterialAlertDialogBuilder(this)
                 .setTitle("CONFIRM DELETION")
@@ -140,9 +196,10 @@ public class MainActivity extends AppCompatActivity {
                     // Delete File & DB Entry on background thread
                     ioExecutor.execute(() -> {
                         File file = new File(lockedDocument.diskLocation);
-                        if (file.exists()) file.delete();
+                        if (file.exists())
+                            file.delete();
                         db.documentDao().delete(lockedDocument.id);
-                        
+
                         runOnUiThread(() -> {
                             adapter.clearLock();
                             loadVaultIntelligence(); // Refresh list
