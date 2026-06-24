@@ -20,12 +20,9 @@
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Enter File Name"
+        android:hint="Target File Name"
         app:boxStrokeColor="#00FF00"
-        app:hintTextColor="#00FF00"
-        android:textColor="#00FF00"
-        app:strokeColor="#00FF00"
-        app:iconTint="#00FF00">
+        app:hintTextColor="#00FF00">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etFileName"
@@ -42,11 +39,7 @@
         android:hint="Classification Category"
         app:boxStrokeColor="#00FF00"
         app:hintTextColor="#00FF00"
-        android:textColor="#00FF00"
-        app:strokeColor="#00FF00"
-        app:iconTint="#00FF00">
-
-        <AutoCompleteTextView
+        app:endIconTint="#00FF00"> <AutoCompleteTextView
             android:id="@+id/spinnerCategory"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

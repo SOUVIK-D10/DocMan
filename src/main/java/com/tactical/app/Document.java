@@ -14,10 +14,16 @@ public class Document {
     public String fileName;
     public String category;
     public LocalDateTime uploadedAt;
+    public String diskLocation;
 
     public Document(String fileName, String category) {
         this.fileName = fileName;
         this.category = category;
         this.uploadedAt = LocalDateTime.now();
+    }
+
+    public Document setDiskLocation(String diskLocation){
+        this.diskLocation=diskLocation;
+        return this;
     }
 }
